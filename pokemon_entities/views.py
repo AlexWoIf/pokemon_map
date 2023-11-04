@@ -1,7 +1,8 @@
 import folium
-import json
+# import json
+from datetime import datetime
 
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseNotFound, HttpResponseBadRequest
 from django.shortcuts import render
 
 from .models import Pokemon, PokemonEntity
@@ -30,7 +31,10 @@ def add_pokemon(folium_map, lat, lon, image_url=DEFAULT_IMAGE_URL):
 
 def show_all_pokemons(request):
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
-    for pokemon_entity in PokemonEntity.objects.all():
+    for pokemon_entity in PokemonEntity.objects.filter(
+        appeared_at__lte=datetime.now(),
+        disappeared_at__gte=datetime.now(),
+    ):
         add_pokemon(
             folium_map,
             pokemon_entity.lat,
@@ -42,7 +46,7 @@ def show_all_pokemons(request):
     for pokemon in Pokemon.objects.all():
         pokemons_on_page.append({
             'pokemon_id': pokemon.id,
-            'img_url': request.build_absolute_uri(pokemon_entity.pokemon.image.url),
+            'img_url': request.build_absolute_uri(pokemon.image.url),
             'title_ru': pokemon.title,
         })
 
@@ -53,24 +57,35 @@ def show_all_pokemons(request):
 
 
 def show_pokemon(request, pokemon_id):
-    with open('pokemon_entities/pokemons.json', encoding='utf-8') as database:
-        pokemons = json.load(database)['pokemons']
-
-    for pokemon in pokemons:
-        if pokemon['pokemon_id'] == int(pokemon_id):
-            requested_pokemon = pokemon
-            break
-    else:
+    try:
+        requested_pokemon = Pokemon.objects.get(id=pokemon_id)
+    except Pokemon.DoesNotExist:
         return HttpResponseNotFound('<h1>Такой покемон не найден</h1>')
-
-    folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
-    for pokemon_entity in requested_pokemon['entities']:
-        add_pokemon(
-            folium_map, pokemon_entity['lat'],
-            pokemon_entity['lon'],
-            pokemon['img_url']
+    except Pokemon.MultipleObjectsReturned:
+        return HttpResponseBadRequest(
+            '<h1>Критическая ошибка при обработке '
+            'запроса. Найдено больше одного покемона.'
         )
 
+    folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
+
+    for pokemon_entity in PokemonEntity.objects.filter(
+                                pokemon=requested_pokemon):
+        add_pokemon(
+            folium_map,
+            pokemon_entity.lat,
+            pokemon_entity.lon,
+            request.build_absolute_uri(pokemon_entity.pokemon.image.url),
+        )
+
+    pokemon = {
+        "pokemon_id": requested_pokemon.id,
+        "title_ru": requested_pokemon.title,
+        # "title_en": "Bulbasaur",
+        # "title_jp": "フシギダネ",
+        # "description": "cтартовый покемон двойного травяного и ядовитого типа из первого поколения и региона Канто. В национальном покедексе под номером 1. На 16 уровне эволюционирует в Ивизавра. Ивизавр на 32 уровне эволюционирует в Венузавра. Наряду с Чармандером и Сквиртлом, Бульбазавр является одним из трёх стартовых покемонов региона Канто.",
+        "img_url": request.build_absolute_uri(pokemon_entity.pokemon.image.url),
+    }
     return render(request, 'pokemon.html', context={
         'map': folium_map._repr_html_(), 'pokemon': pokemon
     })
