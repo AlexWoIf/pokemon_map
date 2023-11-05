@@ -87,6 +87,13 @@ def show_pokemon(request, pokemon_id):
         "img_url": request.build_absolute_uri(
                     pokemon_entity.pokemon.image.url),
     }
+    if requested_pokemon.previous_evolution:
+        parent = requested_pokemon.previous_evolution
+        pokemon["previous_evolution"] = {
+            "title_ru": parent.title,
+            "pokemon_id": parent.id,
+            "img_url": request.build_absolute_uri(parent.image.url),
+        }
     return render(request, 'pokemon.html', context={
         'map': folium_map._repr_html_(), 'pokemon': pokemon
     })
