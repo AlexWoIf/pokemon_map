@@ -81,10 +81,11 @@ def show_pokemon(request, pokemon_id):
     pokemon = {
         "pokemon_id": requested_pokemon.id,
         "title_ru": requested_pokemon.title,
-        # "title_en": "Bulbasaur",
-        # "title_jp": "フシギダネ",
-        # "description": "cтартовый покемон двойного травяного и ядовитого типа из первого поколения и региона Канто. В национальном покедексе под номером 1. На 16 уровне эволюционирует в Ивизавра. Ивизавр на 32 уровне эволюционирует в Венузавра. Наряду с Чармандером и Сквиртлом, Бульбазавр является одним из трёх стартовых покемонов региона Канто.",
-        "img_url": request.build_absolute_uri(pokemon_entity.pokemon.image.url),
+        "title_en": requested_pokemon.title_en,
+        "title_jp": requested_pokemon.title_jp,
+        "description": requested_pokemon.description,
+        "img_url": request.build_absolute_uri(
+                    pokemon_entity.pokemon.image.url),
     }
     return render(request, 'pokemon.html', context={
         'map': folium_map._repr_html_(), 'pokemon': pokemon
