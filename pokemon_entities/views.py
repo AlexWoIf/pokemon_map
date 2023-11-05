@@ -1,7 +1,6 @@
 import folium
-# import json
-from datetime import datetime
 
+from django.utils import timezone
 from django.http import HttpResponseNotFound, HttpResponseBadRequest
 from django.shortcuts import render
 
@@ -32,8 +31,8 @@ def add_pokemon(folium_map, lat, lon, image_url=DEFAULT_IMAGE_URL):
 def show_all_pokemons(request):
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
     for pokemon_entity in PokemonEntity.objects.filter(
-        appeared_at__lte=datetime.now(),
-        disappeared_at__gte=datetime.now(),
+        appeared_at__lte=timezone.now(),
+        disappeared_at__gte=timezone.now(),
     ):
         add_pokemon(
             folium_map,
@@ -58,7 +57,7 @@ def show_all_pokemons(request):
 
 def show_pokemon(request, pokemon_id):
     try:
-        requested_pokemon = Pokemon.objects.get(id=pokemon_id)
+        requested_pokemon = Pokemon.objects.get(id=pokemon_id, )
     except Pokemon.DoesNotExist:
         return HttpResponseNotFound('<h1>Такой покемон не найден</h1>')
     except Pokemon.MultipleObjectsReturned:
@@ -70,7 +69,9 @@ def show_pokemon(request, pokemon_id):
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
 
     for pokemon_entity in PokemonEntity.objects.filter(
-                                pokemon=requested_pokemon):
+                                pokemon=requested_pokemon,
+                                appeared_at__lte=timezone.now(),
+                                disappeared_at__gte=timezone.now(), ):
         add_pokemon(
             folium_map,
             pokemon_entity.lat,
@@ -85,7 +86,7 @@ def show_pokemon(request, pokemon_id):
         "title_jp": requested_pokemon.title_jp,
         "description": requested_pokemon.description,
         "img_url": request.build_absolute_uri(
-                    pokemon_entity.pokemon.image.url),
+                    requested_pokemon.image.url),
     }
     parent = requested_pokemon.previous_evolution
     if parent:
