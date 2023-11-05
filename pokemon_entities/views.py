@@ -87,12 +87,19 @@ def show_pokemon(request, pokemon_id):
         "img_url": request.build_absolute_uri(
                     pokemon_entity.pokemon.image.url),
     }
-    if requested_pokemon.previous_evolution:
-        parent = requested_pokemon.previous_evolution
+    parent = requested_pokemon.previous_evolution
+    if parent:
         pokemon["previous_evolution"] = {
             "title_ru": parent.title,
             "pokemon_id": parent.id,
             "img_url": request.build_absolute_uri(parent.image.url),
+        }
+    child = requested_pokemon.pokemon_set.all().first()
+    if child:
+        pokemon["next_evolution"] = {
+            "title_ru": child.title,
+            "pokemon_id": child.id,
+            "img_url": request.build_absolute_uri(child.image.url),
         }
     return render(request, 'pokemon.html', context={
         'map': folium_map._repr_html_(), 'pokemon': pokemon
