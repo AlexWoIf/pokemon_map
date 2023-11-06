@@ -1,8 +1,7 @@
 import folium
 
 from django.utils import timezone
-from django.http import HttpResponseNotFound, HttpResponseBadRequest
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 
 from .models import Pokemon, PokemonEntity
 
@@ -30,9 +29,10 @@ def add_pokemon(folium_map, lat, lon, image_url=DEFAULT_IMAGE_URL):
 
 def show_all_pokemons(request):
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
+    now = timezone.now()
     for pokemon_entity in PokemonEntity.objects.filter(
-        appeared_at__lte=timezone.now(),
-        disappeared_at__gte=timezone.now(),
+        appeared_at__lte=now,
+        disappeared_at__gte=now,
     ):
         add_pokemon(
             folium_map,
@@ -56,22 +56,15 @@ def show_all_pokemons(request):
 
 
 def show_pokemon(request, pokemon_id):
-    try:
-        requested_pokemon = Pokemon.objects.get(id=pokemon_id, )
-    except Pokemon.DoesNotExist:
-        return HttpResponseNotFound('<h1>Такой покемон не найден</h1>')
-    except Pokemon.MultipleObjectsReturned:
-        return HttpResponseBadRequest(
-            '<h1>Критическая ошибка при обработке '
-            'запроса. Найдено больше одного покемона.'
-        )
+    requested_pokemon = get_object_or_404(Pokemon, id=pokemon_id, )
 
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
 
+    now = timezone.now()
     for pokemon_entity in PokemonEntity.objects.filter(
                                 pokemon=requested_pokemon,
-                                appeared_at__lte=timezone.now(),
-                                disappeared_at__gte=timezone.now(), ):
+                                appeared_at__lte=now,
+                                disappeared_at__gte=now, ):
         add_pokemon(
             folium_map,
             pokemon_entity.lat,
@@ -95,7 +88,7 @@ def show_pokemon(request, pokemon_id):
             "pokemon_id": parent.id,
             "img_url": request.build_absolute_uri(parent.image.url),
         }
-    child = requested_pokemon.pokemon_set.all().first()
+    child = requested_pokemon.parents.first()
     if child:
         pokemon["next_evolution"] = {
             "title_ru": child.title,
