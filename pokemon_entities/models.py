@@ -13,7 +13,7 @@ class Pokemon(models.Model):
                               verbose_name='Изображение', )
     previous_evolution = models.ForeignKey(
                             'self',
-                            related_name='parents',
+                            related_name='childs',
                             on_delete=models.CASCADE,
                             null=True,
                             blank=True,
@@ -25,7 +25,7 @@ class Pokemon(models.Model):
 
 class PokemonEntity(models.Model):
     pokemon = models.ForeignKey(Pokemon, on_delete=models.CASCADE,
-                                related_name='pokemons',
+                                related_name='entities',
                                 verbose_name='Покемон', )
     lat = models.FloatField(verbose_name='Широта', )
     lon = models.FloatField(verbose_name='Долгота', )

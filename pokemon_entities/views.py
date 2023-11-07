@@ -88,7 +88,7 @@ def show_pokemon(request, pokemon_id):
             "pokemon_id": parent.id,
             "img_url": request.build_absolute_uri(parent.image.url),
         }
-    child = requested_pokemon.parents.first()
+    child = requested_pokemon.childs.first()
     if child:
         pokemon["next_evolution"] = {
             "title_ru": child.title,
